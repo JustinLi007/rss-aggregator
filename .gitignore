@@ -24,3 +24,5 @@ go.work.sum
 # JL
 rssaggregator.sh
 rss-aggregator
+*.env
+go.sum
