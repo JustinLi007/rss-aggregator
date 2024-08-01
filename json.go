@@ -11,7 +11,7 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{})
 
 	data, err := json.Marshal(payload)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error marshalling JSON: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -22,6 +22,10 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{})
 }
 
 func respondWithError(w http.ResponseWriter, statusCode int, errorMessage string) {
+	if statusCode > 499 {
+		log.Printf("Responding with 5XX error: %v", errorMessage)
+	}
+
 	type payload struct {
 		Error string `json:"error"`
 	}

@@ -11,15 +11,15 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load("secrets.env"); err != nil {
-		log.Fatal(err)
-	}
-
 	debug := flag.Bool("debug", false, "Debug mode")
 	flag.Parse()
 
 	if debug != nil && *debug {
 		fmt.Println("Debug mode enabled")
+	}
+
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
 	}
 
 	port := os.Getenv("PORT")
@@ -37,6 +37,7 @@ func main() {
 		Handler: serveMux,
 	}
 
+	log.Printf("Server listening on port: %v", port)
 	log.Fatal(server.ListenAndServe())
 }
 

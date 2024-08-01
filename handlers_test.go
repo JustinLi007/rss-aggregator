@@ -19,7 +19,7 @@ func TestHealthzHandler(t *testing.T) {
 	handler.ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
-		t.Errorf("Expected status code %v, got %v\n", http.StatusOK, status)
+		t.Errorf("Expected status code %v, got %v", http.StatusOK, status)
 	}
 
 	type payload struct {
@@ -34,7 +34,7 @@ func TestHealthzHandler(t *testing.T) {
 	}
 
 	if recorder.Body.String() != string(expected) {
-		t.Errorf("Expected body %v, got %v\n", string(expected), recorder.Body.String())
+		t.Errorf("Expected body %v, got %v", string(expected), recorder.Body.String())
 	}
 }
 
@@ -50,7 +50,7 @@ func TestErrorHandler(t *testing.T) {
 	handler.ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusInternalServerError {
-		t.Errorf("Expected status code %v, got %v\n", http.StatusInternalServerError, status)
+		t.Errorf("Expected status code %v, got %v", http.StatusInternalServerError, status)
 	}
 
 	type payload struct {
@@ -62,6 +62,6 @@ func TestErrorHandler(t *testing.T) {
 	})
 
 	if recorder.Body.String() != string(expected) {
-		t.Errorf("Expected body %v, got %v\n", string(expected), recorder.Body.String())
+		t.Errorf("Expected body %v, got %v", string(expected), recorder.Body.String())
 	}
 }
