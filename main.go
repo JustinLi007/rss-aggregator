@@ -1,14 +1,22 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/JustinLi007/rss-aggregator/internal/database"
+	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
+
+type apiConfig struct {
+	DB *database.Queries
+}
 
 func main() {
 	debug := flag.Bool("debug", false, "Debug mode")
@@ -27,10 +35,26 @@ func main() {
 		log.Fatal("PORT environment variable not set")
 	}
 
+	dbURL := os.Getenv("PSQL_CONNECTION_URL")
+	if port == "" {
+		log.Fatal("PSQL_CONNECTION_URL environment variable not set")
+	}
+
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	apiCfg := apiConfig{
+		DB: database.New(db),
+	}
+
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("."))))
 	serveMux.HandleFunc("GET /v1/healthz", healthzHandler)
 	serveMux.HandleFunc("GET /v1/err", errorHandler)
+
+	serveMux.HandleFunc("POST /v1/users", apiCfg.createUsersHandler)
 
 	server := &http.Server{
 		Addr:    ":" + port,
