@@ -51,10 +51,12 @@ func main() {
 
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("."))))
+
 	serveMux.HandleFunc("GET /v1/healthz", healthzHandler)
 	serveMux.HandleFunc("GET /v1/err", errorHandler)
 
 	serveMux.HandleFunc("POST /v1/users", apiCfg.createUsersHandler)
+	serveMux.HandleFunc("GET /v1/users", apiCfg.getUserHandler)
 
 	server := &http.Server{
 		Addr:    ":" + port,

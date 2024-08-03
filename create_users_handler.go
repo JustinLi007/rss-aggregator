@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -9,6 +8,14 @@ import (
 	"github.com/JustinLi007/rss-aggregator/internal/database"
 	"github.com/google/uuid"
 )
+
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
+	ApiKey    string    `json:"api_key"`
+}
 
 func (cfg *apiConfig) createUsersHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
@@ -22,31 +29,26 @@ func (cfg *apiConfig) createUsersHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID := uuid.New()
-	newUserParams := database.CreateUserParams{
-		ID:        userID,
+	user, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
+		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 		Name:      params.Name,
-	}
-
-	user, err := cfg.DB.CreateUser(context.TODO(), newUserParams)
+	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
 
-	type payload struct {
-		ID        string    `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Name      string    `json:"name"`
-	}
+	respondWithJSON(w, http.StatusOK, databaseUserToUser(user))
+}
 
-	respondWithJSON(w, http.StatusCreated, payload{
-		ID:        userID.String(),
+func databaseUserToUser(user database.User) User {
+	return User{
+		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Name:      user.Name,
-	})
+		ApiKey:    user.ApiKey,
+	}
 }

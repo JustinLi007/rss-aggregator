@@ -22,8 +22,9 @@ go.work
 go.work.sum
 
 # JL
-rssaggregator.sh
-rss-aggregator
 *.env
 go.sum
+rss-aggregator
+rssaggregator.sh
+tests.sh
 notes.md
