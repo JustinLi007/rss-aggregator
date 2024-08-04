@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/JustinLi007/rss-aggregator/internal/database"
-	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -56,7 +55,9 @@ func main() {
 	serveMux.HandleFunc("GET /v1/err", errorHandler)
 
 	serveMux.HandleFunc("POST /v1/users", apiCfg.createUsersHandler)
-	serveMux.HandleFunc("GET /v1/users", apiCfg.getUserHandler)
+	serveMux.HandleFunc("GET /v1/users", apiCfg.middlewareAuth(apiCfg.getUserAuthedHandler))
+
+	serveMux.HandleFunc("POST /v1/feeds", apiCfg.middlewareAuth(apiCfg.createFeedsAuthedHandler))
 
 	server := &http.Server{
 		Addr:    ":" + port,

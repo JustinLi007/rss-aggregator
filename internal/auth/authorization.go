@@ -6,15 +6,17 @@ import (
 	"strings"
 )
 
+var ErrNoAuthHeaderIncluded = errors.New("No authorization header included")
+
 func GetApiKeyToken(header http.Header) (string, error) {
 	headerAuth := header.Get("Authorization")
-	if !strings.HasPrefix(headerAuth, "ApiKey ") {
-		return "", errors.New("Header does not contain Authorization: ApiKey")
+	if headerAuth == "" || !strings.HasPrefix(headerAuth, "ApiKey ") {
+		return "", ErrNoAuthHeaderIncluded
 	}
 
 	apiKey := strings.TrimPrefix(headerAuth, "ApiKey ")
 	if len(strings.Fields(apiKey)) != 1 {
-		return "", errors.New("Malformed ApiKey")
+		return "", errors.New("Malformed authorization header")
 	}
 
 	return apiKey, nil
