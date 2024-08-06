@@ -23,7 +23,7 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{})
 
 func respondWithError(w http.ResponseWriter, statusCode int, errorMessage string) {
 	if statusCode > 499 {
-		log.Printf("Responding with 5XX error: %v", errorMessage)
+		log.Printf("Responding with 5XX error: %v - %v", statusCode, errorMessage)
 	}
 
 	type payload struct {
