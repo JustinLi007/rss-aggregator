@@ -26,3 +26,11 @@ type User struct {
 	Name      string
 	ApiKey    string
 }
+
+type UsersFeedsFollow struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uuid.UUID
+	FeedID    uuid.UUID
+}

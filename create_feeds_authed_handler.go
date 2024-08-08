@@ -35,5 +35,7 @@ func (cfg *apiConfig) createFeedsAuthedHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// TODO: follow the feed created.
+
 	respondWithJSON(w, http.StatusOK, databaseFeedToFeed(feed))
 }
