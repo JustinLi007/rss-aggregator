@@ -45,6 +45,24 @@ func (q *Queries) FollowFeed(ctx context.Context, arg FollowFeedParams) (UsersFe
 	return i, err
 }
 
+const getFeedFollowByID = `-- name: GetFeedFollowByID :one
+SELECT id, created_at, updated_at, user_id, feed_id FROM users_feeds_follows
+WHERE id = $1
+`
+
+func (q *Queries) GetFeedFollowByID(ctx context.Context, id uuid.UUID) (UsersFeedsFollow, error) {
+	row := q.db.QueryRowContext(ctx, getFeedFollowByID, id)
+	var i UsersFeedsFollow
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+		&i.FeedID,
+	)
+	return i, err
+}
+
 const getFeedFollows = `-- name: GetFeedFollows :many
 SELECT id, created_at, updated_at, user_id, feed_id FROM users_feeds_follows
 `

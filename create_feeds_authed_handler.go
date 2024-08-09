@@ -35,7 +35,25 @@ func (cfg *apiConfig) createFeedsAuthedHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// TODO: follow the feed created.
+	feedFollow, err := cfg.DB.FollowFeed(r.Context(), database.FollowFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to follow the feed")
+		return
+	}
 
-	respondWithJSON(w, http.StatusOK, databaseFeedToFeed(feed))
+	type payload struct {
+		Feed       Feed             `json:"feed"`
+		FeedFollow UsersFeedsFollow `json:"feed_follow"`
+	}
+
+	respondWithJSON(w, http.StatusOK, payload{
+		Feed:       databaseFeedToFeed(feed),
+		FeedFollow: databaseFeedFollowToFeedFollow(feedFollow),
+	})
 }

@@ -9,3 +9,7 @@ WHERE id = $1;
 
 -- name: GetFeedFollows :many
 SELECT * FROM users_feeds_follows;
+
+-- name: GetFeedFollowByID :one
+SELECT * FROM users_feeds_follows
+WHERE id = $1;
