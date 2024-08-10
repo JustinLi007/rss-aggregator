@@ -31,7 +31,7 @@ func (cfg *apiConfig) unfollowFeedAuthedHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if feedFollow.UserID.String() == user.ID.String() {
+	if feedFollow.UserID.String() != user.ID.String() {
 		respondWithError(w, http.StatusBadRequest, "Feed not followed by user")
 		return
 	}

@@ -24,6 +24,8 @@ var testFeedName = "Sample Feed"
 var testFeedURL = "www.url.com"
 var testUser = User{}
 var testFeedCreatePayload = createFeedPayload{}
+var testFeedFollow = UsersFeedsFollow{}
+var testFeedFollowUser = User{}
 
 func executeRequest(c *http.Client, r *http.Request) ([]byte, error) {
 	resp, err := c.Do(r)
@@ -33,6 +35,12 @@ func executeRequest(c *http.Client, r *http.Request) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if status := resp.StatusCode; status != http.StatusOK {
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf(err.Error())
+		} else {
+			fmt.Printf(string(data))
+		}
 		return make([]byte, 0), errors.New(fmt.Sprintf("Expected status code %v, got %v", http.StatusOK, status))
 	}
 
@@ -97,7 +105,7 @@ func userFeedFollowIsSet(actual UsersFeedsFollow, feed Feed, user User, t *testi
 		t.Errorf("Expected user_id %v, got %v", user.ID, actual.UserID)
 	}
 	if actual.FeedID.String() != feed.ID.String() {
-		t.Errorf("Expected feed_id %v, got %v", feed.ID, actual.UserID)
+		t.Errorf("Expected feed_id %v, got %v", feed.ID, actual.FeedID)
 	}
 }
 
@@ -137,6 +145,24 @@ func compareFeed(expected Feed, actual Feed, t *testing.T) {
 	}
 	if actual.UserID.String() != expected.UserID.String() {
 		t.Errorf("Expected user_id %v, got %v", expected.UserID, actual.UserID)
+	}
+}
+
+func compareUserFeedFollow(expected, actual UsersFeedsFollow, t *testing.T) {
+	if actual.ID.String() != expected.ID.String() {
+		t.Errorf("Expected UUID %v, got %v", expected.ID, actual.ID)
+	}
+	if actual.CreatedAt.Compare(expected.CreatedAt) != 0 {
+		t.Errorf("Expected created_at %v, got %v", expected.CreatedAt, actual.CreatedAt)
+	}
+	if actual.UpdatedAt.Compare(expected.UpdatedAt) != 0 {
+		t.Errorf("Expected updated_at %v, got %v", expected.UpdatedAt, actual.UpdatedAt)
+	}
+	if actual.UserID.String() != expected.UserID.String() {
+		t.Errorf("Expected user_id %v, got %v", expected.UserID, actual.UserID)
+	}
+	if actual.FeedID.String() != expected.FeedID.String() {
+		t.Errorf("Expected feed_id %v, got %v", expected.FeedID, actual.FeedID)
 	}
 }
 
@@ -247,6 +273,97 @@ func TestGetFeedsEndpoint(t *testing.T) {
 	}
 
 	compareFeed(testFeedCreatePayload.Feed, actual[0], t)
+}
+
+func TestFollowFeedEndpoint(t *testing.T) {
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	url := "http://localhost:8080/v1/users"
+	reqPayload := fmt.Sprintf(`{"name":"%v"}`, testUserName+" For Feed Follow")
+	req, err := http.NewRequest("POST", url, strings.NewReader(reqPayload))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	data, err := executeRequest(client, req)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	feedFollowTestUser := User{}
+	if err := json.Unmarshal(data, &feedFollowTestUser); err != nil {
+		t.Fatalf("Failed to unmarshal resp data: %v", err)
+	}
+	testFeedFollowUser = feedFollowTestUser
+
+	url = "http://localhost:8080/v1/feed_follows"
+	reqPayload = fmt.Sprintf(`{"feed_id":"%v"}`, testFeedCreatePayload.Feed.ID)
+	req, err = http.NewRequest("POST", url, strings.NewReader(reqPayload))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("ApiKey %v", feedFollowTestUser.ApiKey))
+
+	data, err = executeRequest(client, req)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	actual := UsersFeedsFollow{}
+	if err := json.Unmarshal(data, &actual); err != nil {
+		t.Fatalf("Failed to unmarshal resp data: %v", err)
+	}
+	testFeedFollow = actual
+	fmt.Println(actual.ID.String())
+
+	userFeedFollowIsSet(actual, testFeedCreatePayload.Feed, feedFollowTestUser, t)
+}
+
+func TestDeleteFeedFollowEndpoint(t *testing.T) {
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	url := fmt.Sprintf("http://localhost:8080/v1/feed_follows/%v", testFeedFollow.ID.String())
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("ApiKey %v", testFeedFollowUser.ApiKey))
+
+	_, err = executeRequest(client, req)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+}
+
+func TestGetFeedFollowsEndpoint(t *testing.T) {
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	url := "http://localhost:8080/v1/feed_follows"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("ApiKey %v", testUser.ApiKey))
+
+	data, err := executeRequest(client, req)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	actual := []UsersFeedsFollow{}
+	if err := json.Unmarshal(data, &actual); err != nil {
+		t.Fatalf("Failed to unmarshal resp data: %v", err)
+	}
+
+	compareUserFeedFollow(testFeedCreatePayload.FeedFollow, actual[0], t)
 }
 
 func TestHealthzHandler(t *testing.T) {
