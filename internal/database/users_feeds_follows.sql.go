@@ -65,10 +65,11 @@ func (q *Queries) GetFeedFollowByID(ctx context.Context, id uuid.UUID) (UsersFee
 
 const getFeedFollows = `-- name: GetFeedFollows :many
 SELECT id, created_at, updated_at, user_id, feed_id FROM users_feeds_follows
+WHERE user_id = $1
 `
 
-func (q *Queries) GetFeedFollows(ctx context.Context) ([]UsersFeedsFollow, error) {
-	rows, err := q.db.QueryContext(ctx, getFeedFollows)
+func (q *Queries) GetFeedFollows(ctx context.Context, userID uuid.UUID) ([]UsersFeedsFollow, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedFollows, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,10 +99,15 @@ func (q *Queries) GetFeedFollows(ctx context.Context) ([]UsersFeedsFollow, error
 
 const unfollowFeed = `-- name: UnfollowFeed :exec
 DELETE FROM users_feeds_follows
-WHERE id = $1
+WHERE id = $1 AND user_id = $2
 `
 
-func (q *Queries) UnfollowFeed(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, unfollowFeed, id)
+type UnfollowFeedParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) UnfollowFeed(ctx context.Context, arg UnfollowFeedParams) error {
+	_, err := q.db.ExecContext(ctx, unfollowFeed, arg.ID, arg.UserID)
 	return err
 }

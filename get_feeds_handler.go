@@ -9,10 +9,5 @@ func (cfg *apiConfig) getFeedsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allFeeds := make([]Feed, 0)
-	for _, f := range feeds {
-		allFeeds = append(allFeeds, databaseFeedToFeed(f))
-	}
-
-	respondWithJSON(w, http.StatusOK, allFeeds)
+	respondWithJSON(w, http.StatusOK, databaseFeedsToFeeds(feeds))
 }

@@ -25,21 +25,15 @@ func (cfg *apiConfig) unfollowFeedAuthedHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	feedFollow, err := cfg.DB.GetFeedFollowByID(r.Context(), feedFollowUUID)
+	err = cfg.DB.UnfollowFeed(r.Context(), database.UnfollowFeedParams{
+		ID:     feedFollowUUID,
+		UserID: user.ID,
+	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to locate followed feed")
-		return
-	}
-
-	if feedFollow.UserID.String() != user.ID.String() {
-		respondWithError(w, http.StatusBadRequest, "Feed not followed by user")
-		return
-	}
-
-	if err = cfg.DB.UnfollowFeed(r.Context(), feedFollowUUID); err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to unfollow")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]string{})
+	//respondWithJSON(w, http.StatusOK, map[string]string{})
+	respondWithJSON(w, http.StatusOK, struct{}{})
 }

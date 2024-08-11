@@ -52,6 +52,14 @@ func databaseFeedToFeed(feed database.Feed) Feed {
 	}
 }
 
+func databaseFeedsToFeeds(feeds []database.Feed) []Feed {
+	result := make([]Feed, len(feeds))
+	for i, v := range feeds {
+		result[i] = databaseFeedToFeed(v)
+	}
+	return result
+}
+
 func databaseFeedFollowToFeedFollow(feedFollow database.UsersFeedsFollow) UsersFeedsFollow {
 	return UsersFeedsFollow{
 		ID:        feedFollow.ID,
@@ -60,4 +68,12 @@ func databaseFeedFollowToFeedFollow(feedFollow database.UsersFeedsFollow) UsersF
 		UserID:    feedFollow.UserID,
 		FeedID:    feedFollow.FeedID,
 	}
+}
+
+func databaseFeedFollowsToFeedFollows(feedFollows []database.UsersFeedsFollow) []UsersFeedsFollow {
+	result := make([]UsersFeedsFollow, len(feedFollows))
+	for i, v := range feedFollows {
+		result[i] = databaseFeedFollowToFeedFollow(v)
+	}
+	return result
 }
