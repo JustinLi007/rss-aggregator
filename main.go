@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/JustinLi007/rss-aggregator/internal/database"
 	"github.com/joho/godotenv"
@@ -15,6 +17,12 @@ import (
 
 type apiConfig struct {
 	DB *database.Queries
+}
+
+type nextFetch struct {
+	nextFeeds []Feed
+	limit     int32
+	offset    int32
 }
 
 func main() {
@@ -60,7 +68,7 @@ func main() {
 	serveMux.HandleFunc("POST /v1/feeds", apiCfg.middlewareAuth(apiCfg.createFeedsAuthedHandler))
 	serveMux.HandleFunc("GET /v1/feeds", apiCfg.getFeedsHandler)
 
-    serveMux.HandleFunc("POST /v1/feed_follows", apiCfg.middlewareAuth(apiCfg.followFeedAuthedHandler))
+	serveMux.HandleFunc("POST /v1/feed_follows", apiCfg.middlewareAuth(apiCfg.followFeedAuthedHandler))
 	serveMux.HandleFunc("GET /v1/feed_follows", apiCfg.middlewareAuth(apiCfg.getFeedFollowsAuthedHandler))
 	serveMux.HandleFunc("DELETE /v1/feed_follows/{feedFollowID}", apiCfg.middlewareAuth(apiCfg.unfollowFeedAuthedHandler))
 
@@ -71,6 +79,37 @@ func main() {
 
 	log.Printf("Server listening on port: %v", port)
 	log.Fatal(server.ListenAndServe())
+}
+
+func (cfg *apiConfig) getNextFeeds(offset, limit int32) nextFetch {
+	log.Printf("Next to fetch: offset %v, limit %v", offset, limit)
+	feeds, err := cfg.DB.GetNextFeedsToFetch(context.TODO(), database.GetNextFeedsToFetchParams{
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		log.Printf("Failed to fetch feeds: %v", err.Error())
+		return nextFetch{}
+	}
+
+	for _, v := range feeds {
+		cfg.DB.MarkFeedFetched(context.TODO(), database.MarkFeedFetchedParams{
+			LastFetchedAt: sql.NullTime{
+				Time:  time.Now().UTC(),
+				Valid: true,
+			},
+			UpdatedAt: time.Now().UTC(),
+			ID:        v.ID,
+		})
+	}
+
+	newOffset := offset + limit
+	result := nextFetch{
+		nextFeeds: databaseFeedsToFeeds(feeds),
+		limit:     limit,
+		offset:    newOffset,
+	}
+	return result
 }
 
 func healthzHandler(w http.ResponseWriter, r *http.Request) {

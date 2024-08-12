@@ -15,12 +15,13 @@ type User struct {
 }
 
 type Feed struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Name      string    `json:"name"`
-	Url       string    `json:"url"`
-	UserID    uuid.UUID `json:"user_id"`
+	ID          uuid.UUID  `json:"id"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	Name        string     `json:"name"`
+	Url         string     `json:"url"`
+	UserID      uuid.UUID  `json:"user_id"`
+	LastFetchAt *time.Time `json:"last_fetched_at"`
 }
 
 type UsersFeedsFollow struct {
@@ -42,14 +43,19 @@ func databaseUserToUser(user database.User) User {
 }
 
 func databaseFeedToFeed(feed database.Feed) Feed {
-	return Feed{
-		ID:        feed.ID,
-		CreatedAt: feed.CreatedAt,
-		UpdatedAt: feed.CreatedAt,
-		Name:      feed.Name,
-		Url:       feed.Url,
-		UserID:    feed.UserID,
+	result := Feed{}
+	result.ID = feed.ID
+	result.CreatedAt = feed.CreatedAt
+	result.UpdatedAt = feed.CreatedAt
+	result.Name = feed.Name
+	result.Url = feed.Url
+	result.UserID = feed.UserID
+	result.LastFetchAt = nil
+	if feed.LastFetchedAt.Valid {
+		result.LastFetchAt = &feed.LastFetchedAt.Time
 	}
+
+	return result
 }
 
 func databaseFeedsToFeeds(feeds []database.Feed) []Feed {
