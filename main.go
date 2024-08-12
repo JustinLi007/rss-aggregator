@@ -3,11 +3,14 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/xml"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/JustinLi007/rss-aggregator/internal/database"
@@ -16,13 +19,13 @@ import (
 )
 
 type apiConfig struct {
-	DB *database.Queries
+	DB        *database.Queries
+	nextFeeds nextFetch
 }
 
 type nextFetch struct {
 	nextFeeds []Feed
 	limit     int32
-	offset    int32
 }
 
 func main() {
@@ -54,7 +57,12 @@ func main() {
 
 	apiCfg := apiConfig{
 		DB: database.New(db),
+		nextFeeds: nextFetch{
+			limit: 2,
+		},
 	}
+
+	//apiCfg.initFetchFeedWorker(time.Second * 60)
 
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("."))))
@@ -81,12 +89,65 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-func (cfg *apiConfig) getNextFeeds(offset, limit int32) nextFetch {
-	log.Printf("Next to fetch: offset %v, limit %v", offset, limit)
-	feeds, err := cfg.DB.GetNextFeedsToFetch(context.TODO(), database.GetNextFeedsToFetchParams{
-		Limit:  limit,
-		Offset: offset,
-	})
+type feedXMLStruct struct{}
+
+func (cfg *apiConfig) initFetchFeedWorker(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			feedsToFetch := cfg.getNextFeeds(cfg.nextFeeds.limit)
+			cfg.nextFeeds = feedsToFetch
+			fetchFeedWorker(feedsToFetch.nextFeeds)
+		}
+	}
+}
+
+func fetchFeedWorker(feeds []Feed) {
+	var wg sync.WaitGroup
+
+	for i := 1; i <= len(feeds); i++ {
+		wg.Add(i)
+		go fetchFeed(feeds[i-1].Url, &wg)
+	}
+
+	wg.Wait()
+}
+
+func fetchFeed(url string, wg *sync.WaitGroup) feedXMLStruct {
+	defer wg.Done()
+	log.Printf("Fetching %v", url)
+	resp, err := http.Get(url)
+	if err != nil {
+		if resp != nil {
+			log.Printf("Status code: %v", resp.StatusCode)
+		}
+		log.Printf("Failed to fetch feed at %v: %v", url, err)
+		return feedXMLStruct{}
+	}
+	defer resp.Body.Close()
+
+	log.Printf("Response status code: %v", resp.StatusCode)
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Failed to read resp body: %v", err)
+		return feedXMLStruct{}
+	}
+
+	result := feedXMLStruct{}
+	if err := xml.Unmarshal(data, &result); err != nil {
+		log.Printf("Failed to unmarshal resp data: %v", err)
+		return feedXMLStruct{}
+	}
+
+	return result
+}
+
+func (cfg *apiConfig) getNextFeeds(limit int32) nextFetch {
+	feeds, err := cfg.DB.GetNextFeedsToFetch(context.TODO(), limit)
 	if err != nil {
 		log.Printf("Failed to fetch feeds: %v", err.Error())
 		return nextFetch{}
@@ -103,11 +164,9 @@ func (cfg *apiConfig) getNextFeeds(offset, limit int32) nextFetch {
 		})
 	}
 
-	newOffset := offset + limit
 	result := nextFetch{
 		nextFeeds: databaseFeedsToFeeds(feeds),
 		limit:     limit,
-		offset:    newOffset,
 	}
 	return result
 }
