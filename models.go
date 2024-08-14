@@ -1,9 +1,11 @@
 package main
 
 import (
+	"database/sql"
+	"time"
+
 	"github.com/JustinLi007/rss-aggregator/internal/database"
 	"github.com/google/uuid"
-	"time"
 )
 
 type User struct {
@@ -43,19 +45,15 @@ func databaseUserToUser(user database.User) User {
 }
 
 func databaseFeedToFeed(feed database.Feed) Feed {
-	result := Feed{}
-	result.ID = feed.ID
-	result.CreatedAt = feed.CreatedAt
-	result.UpdatedAt = feed.CreatedAt
-	result.Name = feed.Name
-	result.Url = feed.Url
-	result.UserID = feed.UserID
-	result.LastFetchAt = nil
-	if feed.LastFetchedAt.Valid {
-		result.LastFetchAt = &feed.LastFetchedAt.Time
+	return Feed{
+		ID:          feed.ID,
+		CreatedAt:   feed.CreatedAt,
+		UpdatedAt:   feed.CreatedAt,
+		Name:        feed.Name,
+		Url:         feed.Url,
+		UserID:      feed.UserID,
+		LastFetchAt: nullTimeToTimePtr(feed.LastFetchedAt),
 	}
-
-	return result
 }
 
 func databaseFeedsToFeeds(feeds []database.Feed) []Feed {
@@ -82,4 +80,11 @@ func databaseFeedFollowsToFeedFollows(feedFollows []database.UsersFeedsFollow) [
 		result[i] = databaseFeedFollowToFeedFollow(v)
 	}
 	return result
+}
+
+func nullTimeToTimePtr(t sql.NullTime) *time.Time {
+	if t.Valid {
+		return &t.Time
+	}
+	return nil
 }
