@@ -373,7 +373,7 @@ func TestHealthzHandler(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(healthzHandler)
+	handler := http.HandlerFunc(handlerHealthz)
 
 	handler.ServeHTTP(recorder, req)
 
@@ -404,7 +404,7 @@ func TestErrorHandler(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(errorHandler)
+	handler := http.HandlerFunc(handlerError)
 
 	handler.ServeHTTP(recorder, req)
 

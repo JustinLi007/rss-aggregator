@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (cfg *apiConfig) followFeedAuthedHandler(w http.ResponseWriter, r *http.Request, user database.User) {
+func (cfg *apiConfig) handlerFollowFeedAuthed(w http.ResponseWriter, r *http.Request, user database.User) {
 	type parameters struct {
 		FeedID uuid.UUID `json:"feed_id"`
 	}

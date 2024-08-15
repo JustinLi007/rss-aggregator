@@ -6,6 +6,6 @@ import (
 	"github.com/JustinLi007/rss-aggregator/internal/database"
 )
 
-func (cfg *apiConfig) getUserAuthedHandler(w http.ResponseWriter, r *http.Request, user database.User) {
+func (cfg *apiConfig) handlerGetUserAuthed(w http.ResponseWriter, r *http.Request, user database.User) {
 	respondWithJSON(w, http.StatusOK, databaseUserToUser(user))
 }

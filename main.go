@@ -54,18 +54,20 @@ func main() {
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("."))))
 
-	serveMux.HandleFunc("GET /v1/healthz", healthzHandler)
-	serveMux.HandleFunc("GET /v1/err", errorHandler)
+	serveMux.HandleFunc("GET /v1/healthz", handlerHealthz)
+	serveMux.HandleFunc("GET /v1/err", handlerError)
 
-	serveMux.HandleFunc("POST /v1/users", apiCfg.createUsersHandler)
-	serveMux.HandleFunc("GET /v1/users", apiCfg.middlewareAuth(apiCfg.getUserAuthedHandler))
+	serveMux.HandleFunc("POST /v1/users", apiCfg.handlerCreateUsers)
+	serveMux.HandleFunc("GET /v1/users", apiCfg.middlewareAuth(apiCfg.handlerGetUserAuthed))
 
-	serveMux.HandleFunc("POST /v1/feeds", apiCfg.middlewareAuth(apiCfg.createFeedsAuthedHandler))
-	serveMux.HandleFunc("GET /v1/feeds", apiCfg.getFeedsHandler)
+	serveMux.HandleFunc("POST /v1/feeds", apiCfg.middlewareAuth(apiCfg.handlerCreateFeedsAuthed))
+	serveMux.HandleFunc("GET /v1/feeds", apiCfg.handlerGetFeeds)
 
-	serveMux.HandleFunc("POST /v1/feed_follows", apiCfg.middlewareAuth(apiCfg.followFeedAuthedHandler))
-	serveMux.HandleFunc("GET /v1/feed_follows", apiCfg.middlewareAuth(apiCfg.getFeedFollowsAuthedHandler))
-	serveMux.HandleFunc("DELETE /v1/feed_follows/{feedFollowID}", apiCfg.middlewareAuth(apiCfg.unfollowFeedAuthedHandler))
+	serveMux.HandleFunc("POST /v1/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerFollowFeedAuthed))
+	serveMux.HandleFunc("GET /v1/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollowsAuthed))
+	serveMux.HandleFunc("DELETE /v1/feed_follows/{feedFollowID}", apiCfg.middlewareAuth(apiCfg.handlerUnfollowFeedAuthed))
+
+	serveMux.HandleFunc("GET /v1/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostsByUser))
 
 	server := &http.Server{
 		Addr:    ":" + port,
@@ -80,7 +82,7 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-func healthzHandler(w http.ResponseWriter, r *http.Request) {
+func handlerHealthz(w http.ResponseWriter, r *http.Request) {
 	type payload struct {
 		Status string `json:"status"`
 	}
@@ -90,6 +92,6 @@ func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func errorHandler(w http.ResponseWriter, r *http.Request) {
+func handlerError(w http.ResponseWriter, r *http.Request) {
 	respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
 }

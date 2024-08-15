@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (cfg *apiConfig) createFeedsAuthedHandler(w http.ResponseWriter, r *http.Request, user database.User) {
+func (cfg *apiConfig) handlerCreateFeedsAuthed(w http.ResponseWriter, r *http.Request, user database.User) {
 	type parameters struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`

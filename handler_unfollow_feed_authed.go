@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (cfg *apiConfig) unfollowFeedAuthedHandler(w http.ResponseWriter, r *http.Request, user database.User) {
+func (cfg *apiConfig) handlerUnfollowFeedAuthed(w http.ResponseWriter, r *http.Request, user database.User) {
 	feedFollowID := r.PathValue("feedFollowID")
 	if feedFollowID == "" {
 		respondWithError(w, http.StatusNotFound, "No feed follow ID included")
